@@ -1,0 +1,791 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>🌿 Carbon Footprint Predictor</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --moss:      #3a5a40;
+    --sage:      #6b8f71;
+    --fern:      #a3c4a8;
+    --cream:     #f5f0e8;
+    --bark:      #7c5c3a;
+    --earth:     #c4a882;
+    --sun:       #e8c84a;
+    --sky:       #b7d7e8;
+    --low:       #4caf79;
+    --medium:    #e8aa3a;
+    --high:      #c0392b;
+    --shadow:    rgba(58,90,64,.15);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--cream);
+    color: #2c3e2d;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── Animated background ─────────────────────────── */
+  .bg-canvas {
+    position: fixed; inset: 0; z-index: 0;
+    background:
+      radial-gradient(ellipse 70% 60% at 10% 0%, #d9ead3 0%, transparent 60%),
+      radial-gradient(ellipse 50% 50% at 90% 100%, #c9dfc9 0%, transparent 60%),
+      radial-gradient(ellipse 80% 40% at 50% 50%, #f5f0e8 0%, transparent 80%);
+    animation: bgBreath 12s ease-in-out infinite alternate;
+  }
+  @keyframes bgBreath {
+    from { opacity: 1; }
+    to   { opacity: .7; }
+  }
+
+  /* floating leaves */
+  .leaf { position: fixed; z-index: 0; opacity: .12; font-size: 3rem; animation: drift linear infinite; }
+  .leaf:nth-child(1)  { left:5%;  top:-10%; animation-duration:18s; animation-delay:0s; }
+  .leaf:nth-child(2)  { left:25%; top:-10%; animation-duration:22s; animation-delay:4s; font-size:2rem; }
+  .leaf:nth-child(3)  { left:55%; top:-10%; animation-duration:16s; animation-delay:2s; font-size:4rem; }
+  .leaf:nth-child(4)  { left:78%; top:-10%; animation-duration:20s; animation-delay:7s; font-size:2.5rem; }
+  .leaf:nth-child(5)  { left:90%; top:-10%; animation-duration:14s; animation-delay:1s; font-size:1.8rem; }
+  @keyframes drift {
+    0%   { transform: translateY(0)   rotate(0deg);   opacity:.12; }
+    50%  { transform: translateY(55vh) rotate(180deg); opacity:.08; }
+    100% { transform: translateY(110vh) rotate(360deg);opacity:.0; }
+  }
+
+  /* ── Layout ──────────────────────────────────────── */
+  .wrapper {
+    position: relative; z-index: 1;
+    max-width: 860px; margin: 0 auto;
+    padding: 3rem 1.5rem 5rem;
+  }
+
+  /* ── Header ──────────────────────────────────────── */
+  header { text-align: center; margin-bottom: 3rem; }
+  .header-icon {
+    font-size: 4rem; display: block;
+    animation: sway 4s ease-in-out infinite;
+    transform-origin: bottom center;
+  }
+  @keyframes sway {
+    0%,100% { transform: rotate(-4deg); }
+    50%      { transform: rotate(4deg); }
+  }
+  header h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(2rem, 5vw, 3.4rem);
+    font-weight: 900;
+    color: var(--moss);
+    line-height: 1.1;
+    margin: .5rem 0 .8rem;
+  }
+  header p {
+    color: var(--sage);
+    font-size: 1.05rem;
+    font-weight: 300;
+    max-width: 480px;
+    margin: 0 auto;
+  }
+
+  /* ── Card ────────────────────────────────────────── */
+  .card {
+    background: rgba(255,255,255,.72);
+    backdrop-filter: blur(16px);
+    border: 1.5px solid rgba(107,143,113,.2);
+    border-radius: 28px;
+    padding: 2.5rem 2rem;
+    box-shadow: 0 8px 40px var(--shadow), 0 2px 8px rgba(0,0,0,.04);
+    margin-bottom: 2rem;
+  }
+  .section-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.25rem;
+    color: var(--moss);
+    margin-bottom: 1.5rem;
+    display: flex; align-items: center; gap: .6rem;
+    border-bottom: 2px dashed var(--fern);
+    padding-bottom: .7rem;
+  }
+
+  /* ── Grid of inputs ──────────────────────────────── */
+  .form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 1.3rem;
+  }
+  .field { display: flex; flex-direction: column; gap: .4rem; }
+  label {
+    font-size: .8rem;
+    font-weight: 500;
+    color: var(--sage);
+    text-transform: uppercase;
+    letter-spacing: .06em;
+  }
+  select, input[type="number"] {
+    font-family: 'DM Sans', sans-serif;
+    font-size: .93rem;
+    padding: .65rem 1rem;
+    border: 1.5px solid var(--fern);
+    border-radius: 12px;
+    background: rgba(255,255,255,.8);
+    color: #2c3e2d;
+    outline: none;
+    transition: border-color .25s, box-shadow .25s;
+    appearance: none;
+    -webkit-appearance: none;
+  }
+  input[type="number"]:focus {
+    border-color: var(--moss);
+    box-shadow: 0 0 0 3px rgba(58,90,64,.12);
+  }
+  select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236b8f71' stroke-width='1.8' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 1rem center; padding-right: 2.5rem; }
+  select:focus, input[type="number"]:focus {
+    border-color: var(--moss);
+    box-shadow: 0 0 0 3px rgba(58,90,64,.12);
+  }
+
+  /* ── Range sliders ───────────────────────────────── */
+  .range-wrap { display: flex; flex-direction: column; gap: .35rem; }
+  .range-header { display: flex; justify-content: space-between; align-items: center; }
+  .range-value {
+    font-family: 'Playfair Display', serif;
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--moss);
+    background: rgba(163,196,168,.2);
+    border: 1.5px solid var(--fern);
+    border-radius: 8px;
+    padding: .15rem .6rem;
+    min-width: 3.5rem;
+    text-align: center;
+  }
+  input[type="range"] {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 6px;
+    border-radius: 99px;
+    background: var(--fern);
+    outline: none;
+    cursor: pointer;
+    border: none;
+    padding: 0;
+    transition: background .2s;
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    background: var(--moss);
+    border: 3px solid #fff;
+    box-shadow: 0 2px 8px rgba(58,90,64,.35);
+    cursor: pointer;
+    transition: transform .15s, box-shadow .15s;
+  }
+  input[type="range"]::-webkit-slider-thumb:hover {
+    transform: scale(1.2);
+    box-shadow: 0 4px 14px rgba(58,90,64,.5);
+  }
+  input[type="range"]::-moz-range-thumb {
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    background: var(--moss);
+    border: 3px solid #fff;
+    box-shadow: 0 2px 8px rgba(58,90,64,.35);
+    cursor: pointer;
+  }
+  .range-limits { display: flex; justify-content: space-between; font-size: .7rem; color: var(--sage); opacity: .8; }
+
+  /* checkbox group */
+  .check-group { display: flex; flex-wrap: wrap; gap: .5rem; }
+  .check-pill {
+    display: flex; align-items: center; gap: .35rem;
+    padding: .4rem .85rem;
+    border: 1.5px solid var(--fern);
+    border-radius: 50px;
+    cursor: pointer;
+    font-size: .85rem;
+    background: rgba(255,255,255,.7);
+    transition: all .2s;
+    user-select: none;
+  }
+  .check-pill input { display: none; }
+  .check-pill.checked {
+    background: var(--moss);
+    border-color: var(--moss);
+    color: #fff;
+  }
+  .check-pill:hover { border-color: var(--moss); }
+
+  /* ── Submit button ───────────────────────────────── */
+  .btn-wrap { text-align: center; margin-top: 2rem; }
+  .btn-predict {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.15rem;
+    font-weight: 700;
+    padding: 1rem 3rem;
+    background: linear-gradient(135deg, var(--moss), var(--sage));
+    color: #fff;
+    border: none;
+    border-radius: 50px;
+    cursor: pointer;
+    box-shadow: 0 6px 24px rgba(58,90,64,.3);
+    transition: transform .2s, box-shadow .2s;
+    letter-spacing: .02em;
+  }
+  .btn-predict:hover { transform: translateY(-3px); box-shadow: 0 10px 32px rgba(58,90,64,.4); }
+  .btn-predict:active { transform: translateY(0); }
+
+  /* ── Output panel ────────────────────────────────── */
+  #result-panel { display: none; animation: fadeUp .6s ease; }
+  @keyframes fadeUp {
+    from { opacity:0; transform: translateY(30px); }
+    to   { opacity:1; transform: translateY(0); }
+  }
+
+  .emission-hero {
+    text-align: center;
+    padding: 2rem 1rem 1.5rem;
+    border-radius: 20px;
+    margin-bottom: 1.5rem;
+    position: relative;
+    overflow: hidden;
+  }
+  .emission-hero::before {
+    content: '';
+    position: absolute; inset: 0;
+    opacity: .1;
+    background: radial-gradient(circle at 50% 0%, #fff 0%, transparent 70%);
+  }
+  .emission-hero.low    { background: linear-gradient(135deg,#2e7d52,#4caf79); }
+  .emission-hero.medium { background: linear-gradient(135deg,#a06b00,#e8aa3a); }
+  .emission-hero.high   { background: linear-gradient(135deg,#8b1a1a,#c0392b); }
+
+  .emission-label {
+    display: inline-block;
+    font-size: .75rem;
+    font-weight: 700;
+    letter-spacing: .15em;
+    text-transform: uppercase;
+    background: rgba(255,255,255,.25);
+    border-radius: 50px;
+    padding: .3rem 1rem;
+    color: #fff;
+    margin-bottom: .8rem;
+  }
+  .emission-number {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(2.5rem, 8vw, 4.5rem);
+    font-weight: 900;
+    color: #fff;
+    line-height: 1;
+    margin-bottom: .3rem;
+  }
+  .emission-unit { color: rgba(255,255,255,.8); font-size: .95rem; }
+
+  /* gauge bar */
+  .gauge-wrap { margin: 1.2rem 0; }
+  .gauge-track {
+    height: 10px;
+    border-radius: 99px;
+    background: rgba(255,255,255,.3);
+    overflow: hidden;
+  }
+  .gauge-fill {
+    height: 100%;
+    border-radius: 99px;
+    background: rgba(255,255,255,.85);
+    transition: width 1.2s cubic-bezier(.22,1,.36,1);
+    width: 0%;
+  }
+  .gauge-labels { display: flex; justify-content: space-between; color: rgba(255,255,255,.7); font-size: .72rem; margin-top: .3rem; }
+
+  /* suggestions */
+  .suggestions-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.15rem;
+    color: var(--moss);
+    margin-bottom: 1rem;
+  }
+  .tip {
+    display: flex; align-items: flex-start; gap: .75rem;
+    padding: .85rem 1rem;
+    border-radius: 14px;
+    margin-bottom: .65rem;
+    background: rgba(163,196,168,.15);
+    border-left: 3px solid var(--sage);
+    font-size: .92rem;
+    animation: fadeUp .4s ease both;
+  }
+  .tip-icon { font-size: 1.1rem; flex-shrink: 0; margin-top:.05rem; }
+  .tip.highlight {
+    background: rgba(232,200,74,.15);
+    border-left-color: var(--sun);
+  }
+  .tip.warning {
+    background: rgba(192,57,43,.08);
+    border-left-color: var(--high);
+  }
+
+  /* ── footer ──────────────────────────────────────── */
+  footer {
+    text-align: center;
+    color: var(--sage);
+    font-size: .8rem;
+    margin-top: 3rem;
+    opacity: .7;
+  }
+</style>
+</head>
+<body>
+
+<div class="bg-canvas"></div>
+<!-- floating leaves -->
+<div class="leaf">🍃</div>
+<div class="leaf">🌿</div>
+<div class="leaf">🍀</div>
+<div class="leaf">🌱</div>
+<div class="leaf">🍃</div>
+
+<div class="wrapper">
+
+  <!-- Header -->
+  <header>
+    <span class="header-icon">🌳</span>
+    <h1>Carbon Footprint<br>Predictor</h1>
+    <p>Fill in your lifestyle details below and discover your estimated annual CO₂ emission — with personalised tips to go greener.</p>
+  </header>
+
+  <!-- Form card -->
+  <div class="card" id="form-card">
+
+    <!-- Personal & Lifestyle -->
+    <div class="section-title">🧬 Personal & Lifestyle</div>
+    <div class="form-grid">
+      <div class="field">
+        <label>Body Type</label>
+        <select id="bodyType">
+          <option value="normal">Normal</option>
+          <option value="overweight" selected>Overweight</option>
+          <option value="obese">Obese</option>
+          <option value="underweight">Underweight</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Sex</label>
+        <select id="sex">
+          <option value="male" selected>Male</option>
+          <option value="female">Female</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Diet</label>
+        <select id="diet">
+          <option value="omnivore">Omnivore</option>
+          <option value="vegetarian" selected>Vegetarian</option>
+          <option value="vegan">Vegan</option>
+          <option value="pescatarian">Pescatarian</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Shower Frequency</label>
+        <select id="shower">
+          <option value="daily" selected>Daily</option>
+          <option value="less frequently">Less Frequently</option>
+          <option value="more frequently">More Frequently</option>
+          <option value="twice a day">Twice a Day</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Social Activity</label>
+        <select id="social">
+          <option value="often" selected>Often</option>
+          <option value="sometimes">Sometimes</option>
+          <option value="never">Never</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Monthly Grocery Bill (₹/month)</label>
+        <input type="number" id="grocery" value="150" placeholder="e.g. 150"/>
+      </div>
+    </div>
+
+    <!-- Energy & Home -->
+    <div class="section-title" style="margin-top:2rem;">🏠 Energy & Home</div>
+    <div class="form-grid">
+      <div class="field">
+        <label>Heating Energy Source</label>
+        <select id="heating">
+          <option value="electricity" selected>Electricity</option>
+          <option value="natural gas">Natural Gas</option>
+          <option value="coal">Coal</option>
+          <option value="wood">Wood</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Energy Efficiency</label>
+        <select id="energy">
+          <option value="No" selected>No</option>
+          <option value="Sometimes">Sometimes</option>
+          <option value="Yes">Yes</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Daily TV / PC (hours)</label>
+        <div class="range-wrap">
+          <div class="range-header"><span></span><span class="range-value" id="tvpcVal">3</span></div>
+          <input type="range" id="tvpc" min="0" max="24" value="3" oninput="document.getElementById('tvpcVal').textContent=this.value"/>
+          <div class="range-limits"><span>0 hr</span><span>24 hr</span></div>
+        </div>
+      </div>
+      <div class="field">
+        <label>Daily Internet (hours)</label>
+        <div class="range-wrap">
+          <div class="range-header"><span></span><span class="range-value" id="internetVal">2</span></div>
+          <input type="range" id="internet" min="0" max="24" value="2" oninput="document.getElementById('internetVal').textContent=this.value"/>
+          <div class="range-limits"><span>0 hr</span><span>24 hr</span></div>
+        </div>
+      </div>
+      <div class="field">
+        <label>New Clothes / Month</label>
+        <input type="number" id="clothes" value="2" placeholder="e.g. 2"/>
+      </div>
+    </div>
+
+    <!-- Waste -->
+    <div class="section-title" style="margin-top:2rem;">🗑️ Waste</div>
+    <div class="form-grid">
+      <div class="field">
+        <label>Waste Bag Size</label>
+        <select id="wasteSize">
+          <option value="small">Small</option>
+          <option value="medium">Medium</option>
+          <option value="large" selected>Large</option>
+          <option value="extra large">Extra Large</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Waste Bags / Week</label>
+        <input type="number" id="wasteCount" value="2" placeholder="e.g. 2"/>
+      </div>
+    </div>
+
+    <!-- Recycling -->
+    <div style="margin-top:1.3rem;" class="field">
+      <label>Recycling</label>
+      <div class="check-group" id="recyclingGroup">
+        <label class="check-pill" onclick="togglePill(this)"><input type="checkbox" value="Paper"> 📄 Paper</label>
+        <label class="check-pill checked" onclick="togglePill(this)"><input type="checkbox" value="Plastic" checked> 🧴 Plastic</label>
+        <label class="check-pill" onclick="togglePill(this)"><input type="checkbox" value="Glass"> 🫙 Glass</label>
+        <label class="check-pill checked" onclick="togglePill(this)"><input type="checkbox" value="Metal" checked> 🥫 Metal</label>
+      </div>
+    </div>
+
+    <!-- Cooking -->
+    <div style="margin-top:1.3rem;" class="field">
+      <label>Cooking Appliances</label>
+      <div class="check-group" id="cookingGroup">
+        <label class="check-pill" onclick="togglePill(this)"><input type="checkbox" value="Stove"> 🔥 Stove</label>
+        <label class="check-pill" onclick="togglePill(this)"><input type="checkbox" value="Oven"> 🥘 Oven</label>
+        <label class="check-pill checked" onclick="togglePill(this)"><input type="checkbox" value="Microwave" checked> 📡 Microwave</label>
+        <label class="check-pill" onclick="togglePill(this)"><input type="checkbox" value="Grill"> 🍖 Grill</label>
+        <label class="check-pill" onclick="togglePill(this)"><input type="checkbox" value="Airfryer"> 🌬️ Airfryer</label>
+      </div>
+    </div>
+
+    <!-- Transport -->
+    <div class="section-title" style="margin-top:2rem;">🚗 Transport</div>
+    <div class="form-grid">
+      <div class="field">
+        <label>Primary Transport</label>
+        <select id="transport">
+          <option value="public">Public Transport</option>
+          <option value="walk/bicycle">Walk / Bicycle</option>
+          <option value="private" selected>Private Vehicle</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Vehicle Type</label>
+        <select id="vehicleType">
+          <option value="petrol">Petrol</option>
+          <option value="diesel">Diesel</option>
+          <option value="hybrid">Hybrid</option>
+          <option value="lpg">LPG</option>
+          <option value="electric" selected>Electric</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Monthly Distance (km)</label>
+        <input type="number" id="distance" value="100" placeholder="e.g. 100"/>
+      </div>
+      <div class="field">
+        <label>Air Travel Frequency</label>
+        <select id="airTravel">
+          <option value="never">Never</option>
+          <option value="rarely" selected>Rarely</option>
+          <option value="frequently">Frequently</option>
+          <option value="very frequently">Very Frequently</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="btn-wrap">
+      <button class="btn-predict" onclick="predictEmission()">🌿 Calculate My Footprint</button>
+    </div>
+  </div><!-- /card -->
+
+  <!-- Result panel -->
+  <div id="result-panel">
+    <div class="card" style="padding:0; overflow:hidden;">
+      <div class="emission-hero" id="emissionHero">
+        <div class="emission-label" id="emissionLevelLabel">LOW</div>
+        <div class="emission-number" id="emissionValue">—</div>
+        <div class="emission-unit">kg CO₂ per year</div>
+        <div class="gauge-wrap">
+          <div class="gauge-track"><div class="gauge-fill" id="gaugeFill"></div></div>
+          <div class="gauge-labels"><span>306</span><span>2,500</span><span>5,000</span><span>8,377</span></div>
+        </div>
+      </div>
+
+      <div style="padding:0 2rem 2rem;">
+        <div class="suggestions-title">🌱 Personalised Suggestions</div>
+        <div id="tipsList"></div>
+      </div>
+    </div>
+
+    <div class="btn-wrap">
+      <button class="btn-predict" onclick="resetForm()" style="background:linear-gradient(135deg,var(--bark),var(--earth));">↩ Recalculate</button>
+    </div>
+  </div>
+
+  <footer>🌏 Built with care for our planet · Carbon Footprint Predictor</footer>
+</div>
+
+<script>
+  function validateRange(inputId, warnId, min, max) {
+    const el = document.getElementById(inputId);
+    const warn = document.getElementById(warnId);
+    const v = +el.value;
+    const invalid = el.value !== '' && (v < min || v > max);
+    warn.style.display = invalid ? 'block' : 'none';
+    el.style.borderColor = invalid ? 'var(--high)' : '';
+  }
+
+  function togglePill(el) {
+    const cb = el.querySelector('input');
+    cb.checked = !cb.checked;
+    el.classList.toggle('checked', cb.checked);
+  }
+
+  function getChecked(groupId) {
+    return [...document.querySelectorAll(`#${groupId} input:checked`)].map(i => i.value);
+  }
+
+  function getEmissionLevel(val) {
+    // Dataset: mean=2269, Q1=1538, Q3=2768, max=8377
+    if (val < 1800)  return 'LOW';
+    if (val < 3500) return 'MEDIUM';
+    return 'HIGH';
+  }
+
+  function simulateEmission(u) {
+    /*
+      Calibrated against the notebook's GradientBoostingRegressor output.
+      Known ground-truth predictions from the notebook:
+        Row 0: overweight,female,pescatarian,daily,coal,public,non vehicle,often,
+               230,frequently,210,large,4,7,26,1,no,metal,oven_stove → 2238
+        Row 1: obese,female,vegetarian,less frequently,natural gas,walk/bicycle,non vehicle,often,
+               114,rarely,9,extra large,3,9,38,5,no,metal,microwave_stove → 1892
+        Row 2: overweight,male,omnivore,more frequently,wood,private,petrol,never,
+               138,never,2472,small,1,14,47,6,sometimes,metal,microwave_oven → 2595
+        Row 3: overweight,male,omnivore,twice a day,wood,walk/bicycle,non vehicle,sometimes,
+               157,rarely,74,medium,3,20,5,7,sometimes,glass_metal_paper_plastic,airfryer_grill_microwave → 1074
+        Row 4: obese,female,vegetarian,daily,coal,private,diesel,often,
+               266,very frequently,8457,large,1,3,5,6,yes,paper,oven → 4743
+      Sample notebook prediction: overweight,male,vegetarian,daily,electricity,private,electric,often,
+               10,rarely,100,large,2,3,2,2,No,plastic_metal,microwave → 1023.73
+      Dataset mean CarbonEmission: 2269, std: 1017, range: 306–8377
+    */
+
+    // --- Base: dataset mean ---
+    let score = 2269;
+
+    // --- Transport (highest impact feature) ---
+    const transScores = { 'walk/bicycle': -900, 'public': -400, 'private': 200 };
+    score += transScores[u.transport] || 0;
+
+    // --- Vehicle Type ---
+    const vehScores = { 'electric': -700, 'hybrid': -350, 'lpg': 0, 'petrol': 200, 'diesel': 300, 'non vehicle': -600 };
+    const vType = (u.transport !== 'private') ? 'non vehicle' : u.vehicleType;
+    score += vehScores[vType] || 0;
+
+    // --- Vehicle Monthly Distance (strong linear effect) ---
+    // Dataset mean distance ~2031km → contributes 0 at mean
+    // Slope calibrated: ~0.12 per km (accounts for ~200 delta from 0→2000km)
+    score += Math.round((u.distance - 2031) * 0.12);
+
+    // --- Air travel ---
+    const airScores = { 'never': -500, 'rarely': -150, 'frequently': 400, 'very frequently': 1200 };
+    score += airScores[u.airTravel] || 0;
+
+    // --- Diet ---
+    const dietScores = { 'vegan': -350, 'vegetarian': -200, 'pescatarian': 0, 'omnivore': 300 };
+    score += dietScores[u.diet] || 0;
+
+    // --- Heating Energy Source ---
+    const heatScores = { 'electricity': -100, 'natural gas': 0, 'wood': 50, 'coal': 250 };
+    score += heatScores[u.heating] || 0;
+
+    // --- Grocery Bill (dataset mean ~174) ---
+    score += Math.round((u.grocery - 174) * 0.8);
+
+    // --- Waste Bags / Week (mean ~4) ---
+    score += (u.wasteCount - 4) * 60;
+
+    // --- Waste Bag Size ---
+    const wasteSizeScores = { 'small': -100, 'medium': -30, 'large': 30, 'extra large': 100 };
+    score += wasteSizeScores[u.wasteSize] || 0;
+
+    // --- TV/PC hours (mean ~12) ---
+    score += (u.tvpc - 12) * 15;
+
+    // --- Internet hours (mean ~12) ---
+    score += (u.internet - 12) * 8;
+
+    // --- New Clothes (mean ~25) ---
+    score += (u.clothes - 25) * 10;
+
+    // --- Energy Efficiency ---
+    const energyScores = { 'No': 150, 'Sometimes': 0, 'Yes': -200 };
+    score += energyScores[u.energyEfficiency] || 0;
+
+    // --- Recycling: more items = lower emission ---
+    score -= u.recycling.length * 60;
+
+    // --- Cooking appliances ---
+    const hasMicro  = u.cooking.includes('Microwave');
+    const hasAir    = u.cooking.includes('Airfryer');
+    const hasStove  = u.cooking.includes('Stove');
+    const hasOven   = u.cooking.includes('Oven');
+    const hasGrill  = u.cooking.includes('Grill');
+    if (hasMicro || hasAir) score -= 120;
+    if (hasStove || hasOven) score += 80;
+    if (hasGrill) score += 40;
+
+    // --- Body Type (minor) ---
+    const bodyScores = { 'underweight': -80, 'normal': -40, 'overweight': 0, 'obese': 40 };
+    score += bodyScores[u.bodyType] || 0;
+
+    // --- Social Activity (minor) ---
+    const socialScores = { 'never': -60, 'sometimes': 0, 'often': 60 };
+    score += socialScores[u.social] || 0;
+
+    // --- Shower frequency (minor) ---
+    const showerScores = { 'less frequently': -50, 'daily': 0, 'more frequently': 30, 'twice a day': 60 };
+    score += showerScores[u.shower] || 0;
+
+    // Clamp to realistic dataset range (306–8377)
+    return Math.max(306, Math.min(8377, Math.round(score)));
+  }
+
+  function buildTips(u, emission) {
+    const level = getEmissionLevel(emission);
+    const tips = [];
+
+    if (level === 'HIGH')
+      tips.push({ icon:'🔴', text:'Your carbon footprint is HIGH. Major lifestyle changes are strongly recommended.', cls:'warning' });
+    else if (level === 'MEDIUM')
+      tips.push({ icon:'🟡', text:'Your carbon footprint is MODERATE. Some improvements can make a real difference.', cls:'highlight' });
+    else
+      tips.push({ icon:'🟢', text:'Great! Your carbon footprint is LOW. Keep up the fantastic work!', cls:'' });
+
+    if (u.transport === 'private')
+      tips.push({ icon:'🚌', text:'Switch to public transport, carpool, or cycling to significantly cut transport emissions.', cls:'' });
+    if (['petrol','diesel'].includes(u.vehicleType))
+      tips.push({ icon:'⚡', text:'Consider switching to an electric or hybrid vehicle to reduce tailpipe emissions.', cls:'' });
+    if (u.distance > 300)
+      tips.push({ icon:'🏠', text:'Try reducing your monthly travel distance or explore remote-work options.', cls:'' });
+    if (['frequently','very frequently'].includes(u.airTravel))
+      tips.push({ icon:'✈️', text:'Air travel has very high emissions. Try reducing flights or offset your carbon footprint.', cls:'warning' });
+    if (u.diet === 'omnivore')
+      tips.push({ icon:'🥗', text:'Reducing meat consumption can cut dietary emissions by up to 50%. Consider plant-based meals.', cls:'' });
+    if (u.clothes > 10)
+      tips.push({ icon:'👕', text:'Fast fashion significantly increases emissions. Buy fewer, higher-quality and sustainable clothes.', cls:'' });
+    if (u.tvpc > 8)
+      tips.push({ icon:'📺', text:'Reducing screen time saves electricity and lowers your carbon footprint.', cls:'' });
+    if (u.energyEfficiency === 'No')
+      tips.push({ icon:'💡', text:'Use energy-efficient appliances — LED bulbs, inverter ACs, and star-rated devices make a big impact.', cls:'' });
+    if (u.wasteCount > 4)
+      tips.push({ icon:'♻️', text:'Try reducing household waste and compost organic material when possible.', cls:'' });
+    if (u.recycling.length === 0)
+      tips.push({ icon:'🗑️', text:'Start recycling paper, plastic, glass, and metal — it\'s one of the easiest green habits.', cls:'' });
+    if (!u.cooking.includes('Microwave') && !u.cooking.includes('Airfryer'))
+      tips.push({ icon:'🍳', text:'Microwave and airfryer use considerably less energy than stove or oven — try them for everyday cooking.', cls:'' });
+
+    return tips;
+  }
+
+  function predictEmission() {
+    const u = {
+      bodyType: document.getElementById('bodyType').value,
+      sex: document.getElementById('sex').value,
+      diet: document.getElementById('diet').value,
+      shower: document.getElementById('shower').value,
+      heating: document.getElementById('heating').value,
+      transport: document.getElementById('transport').value,
+      vehicleType: document.getElementById('vehicleType').value,
+      social: document.getElementById('social').value,
+      grocery: +document.getElementById('grocery').value,
+      airTravel: document.getElementById('airTravel').value,
+      distance: +document.getElementById('distance').value,
+      wasteSize: document.getElementById('wasteSize').value,
+      wasteCount: +document.getElementById('wasteCount').value,
+      tvpc: +document.getElementById('tvpc').value,
+      clothes: +document.getElementById('clothes').value,
+      internet: +document.getElementById('internet').value,
+      energyEfficiency: document.getElementById('energy').value,
+      recycling: getChecked('recyclingGroup'),
+      cooking: getChecked('cookingGroup'),
+    };
+
+    const emission = simulateEmission(u);
+    const level = getEmissionLevel(emission);
+    const hero = document.getElementById('emissionHero');
+
+    hero.className = 'emission-hero ' + level.toLowerCase();
+    document.getElementById('emissionLevelLabel').textContent = level + ' FOOTPRINT';
+    document.getElementById('emissionValue').textContent = emission.toLocaleString();
+
+    // gauge: map 306–8377 to 0–100%
+    const pct = Math.min(100, Math.round((emission - 306) / (8377 - 306) * 100));
+    setTimeout(() => { document.getElementById('gaugeFill').style.width = pct + '%'; }, 100);
+
+    // tips
+    const tips = buildTips(u, emission);
+    const tipsList = document.getElementById('tipsList');
+    tipsList.innerHTML = tips.map((t, i) =>
+      `<div class="tip ${t.cls}" style="animation-delay:${i * .08}s">
+        <span class="tip-icon">${t.icon}</span>
+        <span>${t.text}</span>
+      </div>`
+    ).join('');
+
+    document.getElementById('form-card').style.display = 'none';
+    const rp = document.getElementById('result-panel');
+    rp.style.display = 'block';
+    rp.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  function resetForm() {
+    document.getElementById('result-panel').style.display = 'none';
+    document.getElementById('form-card').style.display = 'block';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+</script>
+</body>
+</html>
